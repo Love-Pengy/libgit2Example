@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.10..3.31)
 project(lg2_demo C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(_XOPEN_SOURCE ON)

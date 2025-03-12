@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static bool cont = true;
@@ -15,21 +16,26 @@ static void quitter(int signum) {
 void print_e(const char *);
 
 void *printDeleted(void *repoDir) {
+
   git_diff *diff = NULL;
   git_repository *repo = NULL;
   git_diff_stats *stats = NULL;
 
-  if (git_repository_open_ext(&repo, repoDir, 0, NULL)) {
+  // Loading objects in given repository located at path
+  if (git_repository_open(&repo, repoDir)) {
     print_e("Open repo failed");
     exit(EXIT_FAILURE);
   }
 
   while (cont) {
 
+    // get/refresh diff using current index and working directory as references   
     if (git_diff_index_to_workdir(&diff, repo, NULL, NULL)) {
       print_e("Diff Failed");
       exit(EXIT_FAILURE);
     }
+
+    // Pull diff stats from diff
     if (git_diff_get_stats(&stats, diff)) {
       print_e("Diff Get Stats Failed");
       exit(EXIT_FAILURE);
@@ -46,11 +52,12 @@ void *printDeleted(void *repoDir) {
 }
 
 void *printInserted(void *repoDir) {
+
   git_diff *diff = NULL;
   git_repository *repo = NULL;
   git_diff_stats *stats = NULL;
 
-  if (git_repository_open_ext(&repo, repoDir, 0, NULL)) {
+  if (git_repository_open(&repo, repoDir)) {
     print_e("Open repo failed");
     exit(EXIT_FAILURE);
   }
@@ -76,6 +83,8 @@ void *printInserted(void *repoDir) {
 }
 
 int main(void) {
+
+  char path[256] = {0};
   pthread_t untrackedThread, trackedThread;
 
   struct sigaction sa;
@@ -91,10 +100,13 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
+  snprintf(path, strlen(getenv("HOME")) + 20, "%s%s", getenv("HOME"), "/Projects/git-stats");
+
   pthread_create(&untrackedThread, NULL, printDeleted,
-                 (void *)"/home/bee/Projects/git-stats");
+                 (void *)path);
+
   pthread_create(&trackedThread, NULL, printInserted,
-                 (void *)"/home/bee/Projects/git-stats");
+                 (void *)path);
 
   pthread_join(untrackedThread, NULL);
   pthread_join(trackedThread, NULL);
