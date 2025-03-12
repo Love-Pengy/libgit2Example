@@ -58,3 +58,4 @@ Makefile
 build
 cmake_install.cmake
 CMakeFiles
+compile_commands.json
