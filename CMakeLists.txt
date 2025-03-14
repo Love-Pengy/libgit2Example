@@ -17,9 +17,11 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/libgit2)
 add_compile_options(-std=gnu11)
 add_executable(diff src/diff.c)
 add_executable(threaded src/threaded.c)
+add_executable(untracked src/untracked.c)
 
 target_include_directories(diff PUBLIC libgit2)
 target_include_directories(threaded PUBLIC libgit2)
+target_include_directories(untracked PUBLIC libgit2)
 
 target_link_libraries(
         diff PUBLIC libgit2 libgit2package
@@ -27,4 +29,8 @@ target_link_libraries(
 
 target_link_libraries(
         threaded PUBLIC libgit2 libgit2package
+)
+
+target_link_libraries(
+        untracked PUBLIC libgit2 libgit2package
 )
