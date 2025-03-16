@@ -44,6 +44,7 @@ int main(void) {
 
   git_diff_stats_free(stats);
   git_diff_free(diff);
+  git_repository_free(repo);
 
   assert(git_libgit2_shutdown() >= 0);
 

@@ -1,4 +1,5 @@
 #include "git2.h"
+#include <assert.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -22,32 +23,25 @@ void *printDeleted(void *repoDir) {
   git_diff_stats *stats = NULL;
 
   // Loading objects in given repository located at path
-  if (git_repository_open(&repo, repoDir)) {
-    print_e("Open repo failed");
-    exit(EXIT_FAILURE);
-  }
+  assert(git_repository_open(&repo, repoDir) == 0);
 
   while (cont) {
 
-    // get/refresh diff using current index and working directory as references   
-    if (git_diff_index_to_workdir(&diff, repo, NULL, NULL)) {
-      print_e("Diff Failed");
-      exit(EXIT_FAILURE);
-    }
+    // get/refresh diff using current index and working directory as references
+    assert(git_diff_index_to_workdir(&diff, repo, NULL, NULL) == 0);
 
     // Pull diff stats from diff
-    if (git_diff_get_stats(&stats, diff)) {
-      print_e("Diff Get Stats Failed");
-      exit(EXIT_FAILURE);
-    }
+    assert(git_diff_get_stats(&stats, diff) == 0);
 
     printf("[DELETIONS] %ld\n", git_diff_stats_deletions(stats));
+
+    git_diff_stats_free(stats);
+    git_diff_free(diff);
 
     sleep(1);
   }
 
-  git_diff_stats_free(stats);
-  git_diff_free(diff);
+  git_repository_free(repo);
   pthread_exit(NULL);
 }
 
@@ -63,22 +57,20 @@ void *printInserted(void *repoDir) {
   }
 
   while (cont) {
-    if (git_diff_index_to_workdir(&diff, repo, NULL, NULL)) {
-      print_e("Diff Failed");
-      exit(EXIT_FAILURE);
-    }
 
-    if (git_diff_get_stats(&stats, diff)) {
-      print_e("Diff Get Stats Failed");
-      exit(EXIT_FAILURE);
-    }
+    assert(git_diff_index_to_workdir(&diff, repo, NULL, NULL) == 0);
+
+    assert(git_diff_get_stats(&stats, diff) == 0);
 
     printf("[INSERTIONS] %ld\n", git_diff_stats_insertions(stats));
+
+    git_diff_stats_free(stats);
+    git_diff_free(diff);
+
     sleep(1);
   }
 
-  git_diff_stats_free(stats);
-  git_diff_free(diff);
+  git_repository_free(repo);
   pthread_exit(NULL);
 }
 
@@ -91,31 +83,23 @@ int main(void) {
   sa.sa_handler = quitter;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_RESTART;
-  if (sigaction(SIGINT, &sa, NULL) == -1) {
-    printf("sigaction failed");
-    exit(EXIT_FAILURE);
-  }
-  if (git_libgit2_init() < 0) {
-    print_e("Init Failed");
-    exit(EXIT_FAILURE);
-  }
 
-  snprintf(path, strlen(getenv("HOME")) + 20, "%s%s", getenv("HOME"), "/Projects/git-stats");
+  assert(sigaction(SIGINT, &sa, NULL) == 0); 
 
-  pthread_create(&untrackedThread, NULL, printDeleted,
-                 (void *)path);
+  assert(git_libgit2_init() >= 0); 
 
-  pthread_create(&trackedThread, NULL, printInserted,
-                 (void *)path);
+  snprintf(path, strlen(getenv("HOME")) + 20, "%s%s", getenv("HOME"),
+           "/Projects/git-stats");
+
+  pthread_create(&untrackedThread, NULL, printDeleted, (void *)path);
+
+  pthread_create(&trackedThread, NULL, printInserted, (void *)path);
 
   pthread_join(untrackedThread, NULL);
   pthread_join(trackedThread, NULL);
 
-  if (git_libgit2_shutdown() < 0) {
+  assert(git_libgit2_shutdown() == 0); 
 
-    print_e("Init Failed");
-    exit(EXIT_FAILURE);
-  }
   printf("\nExited Succesfully\n");
   return 0;
 }

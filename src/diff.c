@@ -1,11 +1,7 @@
-#include "git2/diff.h"
-#include "git2/errors.h"
-#include "git2/global.h"
-#include "git2/repository.h"
-#include "git2/types.h"
+#include "git2.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-/*#include "common.h"*/
 
 void print_e(const char *message) {
   const git_error *e = git_error_last();
@@ -31,36 +27,22 @@ int main() {
   git_repository *repo = NULL;
   git_diff_stats *stats = NULL;
 
-  if (git_libgit2_init() < 0) {
-    print_e("Init Failed");
-    exit(EXIT_FAILURE);
-  }
+  assert(git_libgit2_init() >= 0);
 
-  if(git_repository_open_ext(&repo, ".", 0, NULL)){
-    print_e("Open repo failed");
-    exit(EXIT_FAILURE);
-  };
+  assert(git_repository_open(&repo, "/home/bee/Projects/git-stats") == 0);
 
-  if (git_diff_index_to_workdir(&diff, repo, NULL, NULL)) {
-    print_e("Diff Failed");
-    exit(EXIT_FAILURE);
-  }
+  assert(git_diff_index_to_workdir(&diff, repo, NULL, NULL) == 0);
 
-  if (git_diff_get_stats(&stats, diff)) {
-    print_e("Diff Get Stats Failed");
-    exit(EXIT_FAILURE);
-  };
+  assert(git_diff_get_stats(&stats, diff) == 0);
 
-  printf("STATS:\ninsert: %ld\ndeletions: %ld\n", git_diff_stats_insertions(stats),
-         git_diff_stats_deletions(stats));
+  printf("STATS:\n\tinsert %ld\n\tdeletions %ld\n",
+         git_diff_stats_insertions(stats), git_diff_stats_deletions(stats));
 
   git_diff_stats_free(stats);
   git_diff_free(diff);
+  git_repository_free(repo);
 
-  if (git_libgit2_shutdown() < 0) {
-    
-    print_e("Init Failed");
-    exit(EXIT_FAILURE);
-  }
+  assert(git_libgit2_shutdown() == 0);
+
   return 0;
 }
